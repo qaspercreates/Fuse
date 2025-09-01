@@ -1,75 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fuse — The Chain Reaction Game</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            fusePink: '#FF5EA2',
-            fusePurple: '#7C3AED',
-            fuseBlue: '#3B82F6',
-            fuseLime: '#84CC16'
-          }
-        }
-      }
-    }
-  </script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body class="min-h-screen flex flex-col items-center justify-center text-white">
+body {
+  background: radial-gradient(1200px 800px at 20% -10%, #1f2937 0%, transparent 60%),
+              radial-gradient(900px 600px at 120% 20%, #111827 0%, transparent 60%),
+              linear-gradient(135deg, #0b0f19 0%, #0e1324 100%);
+  background-attachment: fixed;
+  font-family: system-ui, sans-serif;
+}
 
-  <header class="absolute top-0 left-0 right-0 flex justify-between items-center p-4 text-sm text-white/80">
-    <div class="font-bold">🔥 Fuse</div>
-    <nav class="flex gap-4">
-      <button id="newChainBtn" class="hover:underline">New Chain</button>
-      <button id="shareLinkBtn" class="hover:underline">Share Link</button>
-    </nav>
-  </header>
+.card {
+  backdrop-filter: blur(10px);
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1);
+  border-radius: 14px;
+}
 
-  <main id="card" class="card w-full max-w-xl p-6 space-y-6 bg-black/30">
-    <div id="setupView">
-      <h1 class="text-xl font-bold mb-2">Build chaos together 🔥</h1>
-      <p class="mb-4 text-white/70 text-sm">
-        Start with a short prompt. Each turn adds a line. After 10 turns, it locks, reveals, and you get a sharable card.
-      </p>
-      <p id="chainIdDisplay" class="mb-4 text-xs text-white/50"></p>
-      <input id="promptInput" class="input mb-3" placeholder="Your prompt">
-      <div class="flex gap-2">
-        <button id="surpriseBtn" class="btn-secondary">Surprise me</button>
-        <button id="startBtn" class="btn-primary">Start</button>
-      </div>
-    </div>
+/* Inputs */
+.input {
+  @apply w-full rounded-lg border px-3 py-2 outline-none;
+  @apply bg-black/60 border-white/15 text-white placeholder:text-zinc-400;
+  caret-color: #fff;
+}
+input:-webkit-autofill {
+  -webkit-text-fill-color:#fff !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
 
-    <div id="playView" class="hidden">
-      <h2 id="promptText" class="font-semibold text-lg"></h2>
-      <ol id="linesList" class="space-y-1 text-white/80 text-sm"></ol>
-      <textarea id="lineInput" class="input mt-2" placeholder="Add your line..."></textarea>
-      <button id="submitBtn" class="btn-primary mt-2">Submit</button>
-      <div id="badges" class="mt-2 text-xs text-white/50"></div>
-    </div>
+/* Buttons */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg font-semibold;
+  background: linear-gradient(90deg, #ff5ea2, #7c3aed, #3b82f6);
+  background-size: 200% 100%;
+  transition: transform .08s ease, filter .2s ease, background-position .4s ease;
+}
+.btn-primary:hover { transform: translateY(-1px) scale(1.02); background-position: 100% 0; filter: brightness(1.07); }
+.btn-primary:active { transform: translateY(0) scale(0.99); }
+.btn-secondary { @apply px-4 py-2 rounded-lg font-medium bg-white/10 hover:bg-white/20; }
+.btn-ghost { @apply px-3 py-2 rounded-lg text-white/70 hover:text-white bg-transparent; }
 
-    <div id="revealView" class="hidden">
-      <h2 id="promptReveal" class="font-semibold text-lg"></h2>
-      <ol id="linesReveal" class="space-y-1 text-white/80 text-sm"></ol>
-      <div class="share-strip my-4"></div>
-      <div class="flex gap-2 flex-wrap">
-        <button id="shareBtn" class="btn-secondary">Download Card</button>
-        <button id="copyTextBtn" class="btn-ghost">Copy Result</button>
-        <a id="shareXBtn" class="btn-primary" target="_blank" rel="noopener">Share on X</a>
-        <button id="againBtn" class="btn-ghost">Start Another</button>
-      </div>
-    </div>
-  </main>
-
-  <footer class="absolute bottom-2 text-xs text-white/40">
-    © 2025 Fuse — The Chain Reaction Game
-  </footer>
-
-  <script src="app.js"></script>
-</body>
-</html>
+.share-strip {
+  height: 4px;
+  background: linear-gradient(90deg, #ff5ea2, #7c3aed, #3b82f6, #84cc16);
+  border-radius: 999px;
+}
