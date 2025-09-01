@@ -1,111 +1,75 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fuse — Chain Reaction Game</title>
-  <meta name="description" content="Start a prompt. 10 people add a line. Lock. Reveal. Share the chaos." />
-  <meta name="theme-color" content="#0ea5e9" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
-  <!-- Tailwind via CDN (no build step) -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuse — The Chain Reaction Game</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { inter: ['Inter', 'ui-sans-serif', 'system-ui'] }
+          colors: {
+            fusePink: '#FF5EA2',
+            fusePurple: '#7C3AED',
+            fuseBlue: '#3B82F6',
+            fuseLime: '#84CC16'
+          }
         }
       }
     }
   </script>
-
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="font-inter text-zinc-100">
+<body class="min-h-screen flex flex-col items-center justify-center text-white">
 
-  <!-- Background -->
-  <div class="fixed inset-0 -z-10 animated-gradient"></div>
-  <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_10%_10%,rgba(255,255,255,.06),transparent_40%),radial-gradient(circle_at_90%_30%,rgba(255,255,255,.06),transparent_40%),radial-gradient(circle_at_50%_90%,rgba(255,255,255,.05),transparent_45%)]"></div>
-
-  <!-- Header -->
-  <header class="sticky top-0 backdrop-blur border-b border-white/10 bg-black/20">
-    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 ring-1 ring-white/15 text-sky-300 font-extrabold">F</span>
-        <h1 class="text-lg font-semibold tracking-tight">Fuse</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="newChainBtn" class="btn-secondary">New Chain</button>
-        <a id="shareLinkBtn" class="btn-ghost" href="#" target="_blank" rel="noopener">Share Link</a>
-      </div>
-    </div>
+  <header class="absolute top-0 left-0 right-0 flex justify-between items-center p-4 text-sm text-white/80">
+    <div class="font-bold">🔥 Fuse</div>
+    <nav class="flex gap-4">
+      <button id="newChainBtn" class="hover:underline">New Chain</button>
+      <button id="shareLinkBtn" class="hover:underline">Share Link</button>
+    </nav>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 py-8 space-y-8">
-    <!-- Hero -->
-    <section class="rounded-2xl p-5 bg-black/30 ring-1 ring-white/10">
-      <h2 class="text-2xl font-extrabold">Build chaos together 🔥</h2>
-      <p class="text-sm text-zinc-300 mt-1">
-        Start with a short prompt. Each turn adds a line. After 10 turns, it <span class="font-semibold">locks</span>,
-        reveals, and you get a shareable card.
+  <main id="card" class="card w-full max-w-xl p-6 space-y-6 bg-black/30">
+    <div id="setupView">
+      <h1 class="text-xl font-bold mb-2">Build chaos together 🔥</h1>
+      <p class="mb-4 text-white/70 text-sm">
+        Start with a short prompt. Each turn adds a line. After 10 turns, it locks, reveals, and you get a sharable card.
       </p>
-      <p id="chainBadge" class="text-xs text-zinc-400 mt-3"></p>
-    </section>
-
-    <!-- Start panel -->
-    <section id="startPanel" class="rounded-2xl p-5 bg-black/30 ring-1 ring-white/10 space-y-3">
-      <label for="promptInput" class="text-sm text-zinc-300">Your prompt</label>
+      <p id="chainIdDisplay" class="mb-4 text-xs text-white/50"></p>
+      <input id="promptInput" class="input mb-3" placeholder="Your prompt">
       <div class="flex gap-2">
-        <input id="promptInput" maxlength="60" placeholder="e.g., If aliens landed tomorrow…"
-               class="input flex-1" />
+        <button id="surpriseBtn" class="btn-secondary">Surprise me</button>
         <button id="startBtn" class="btn-primary">Start</button>
       </div>
-      <button id="randomPrompt" class="text-xs underline text-zinc-300 hover:text-white">Surprise me</button>
-    </section>
+    </div>
 
-    <!-- Play panel -->
-    <section id="playPanel" class="hidden rounded-2xl p-5 bg-black/30 ring-1 ring-white/10">
-      <div class="flex items-center justify-between">
-        <div class="text-xs text-zinc-300">Chain <span id="chainId"></span> • Turn <span id="turnNum">1</span>/10</div>
-        <div class="text-xs text-zinc-300" id="progress">0 / 10 lines</div>
-      </div>
+    <div id="playView" class="hidden">
+      <h2 id="promptText" class="font-semibold text-lg"></h2>
+      <ol id="linesList" class="space-y-1 text-white/80 text-sm"></ol>
+      <textarea id="lineInput" class="input mt-2" placeholder="Add your line..."></textarea>
+      <button id="submitBtn" class="btn-primary mt-2">Submit</button>
+      <div id="badges" class="mt-2 text-xs text-white/50"></div>
+    </div>
 
-      <div class="mt-3 text-sm text-zinc-200 italic" id="lastLine">You’re first — set the tone.</div>
-
-      <textarea id="lineInput" maxlength="80" placeholder="Add the next few words…"
-                class="input mt-3 h-28"></textarea>
-
-      <div class="mt-3 flex items-center justify-between">
-        <div class="text-xs text-zinc-300"><span id="charsLeft">80</span> chars left</div>
-        <button id="submitLine" class="btn-primary">Add Line</button>
-      </div>
-    </section>
-
-    <!-- Reveal panel -->
-    <section id="revealPanel" class="hidden space-y-4">
-      <div id="card" class="rounded-2xl p-5 ring-1 ring-white/10 bg-card shadow-xl">
-        <div class="text-xs text-zinc-300">Completed Chain</div>
-        <h3 id="promptText" class="text-xl font-bold mt-1"></h3>
-        <ol id="linesList" class="mt-3 list-decimal pl-5 leading-relaxed space-y-1"></ol>
-        <div class="text-[10px] text-zinc-400 mt-4">Made with Fuse — fuse.fun</div>
-      </div>
-
-      <div class="flex gap-2">
+    <div id="revealView" class="hidden">
+      <h2 id="promptReveal" class="font-semibold text-lg"></h2>
+      <ol id="linesReveal" class="space-y-1 text-white/80 text-sm"></ol>
+      <div class="share-strip my-4"></div>
+      <div class="flex gap-2 flex-wrap">
         <button id="shareBtn" class="btn-secondary">Download Card</button>
+        <button id="copyTextBtn" class="btn-ghost">Copy Result</button>
+        <a id="shareXBtn" class="btn-primary" target="_blank" rel="noopener">Share on X</a>
         <button id="againBtn" class="btn-ghost">Start Another</button>
       </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="pt-6 pb-10 text-center text-xs text-zinc-300">
-      © <span id="yr"></span> Fuse — The Chain Reaction Game
-    </footer>
+    </div>
   </main>
 
-  <!-- App code -->
-  <script src="./app.js" defer></script>
+  <footer class="absolute bottom-2 text-xs text-white/40">
+    © 2025 Fuse — The Chain Reaction Game
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
