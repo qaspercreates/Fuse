@@ -1,5 +1,6 @@
 [build]
   publish = "."
+# No build command needed (pure static)
 
 [[headers]]
   for = "/*"
