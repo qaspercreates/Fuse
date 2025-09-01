@@ -1,243 +1,128 @@
-// Fuse — single-file logic (per-visitor unique chain).
-// Each visit gets its own chain ID via ?c=XXXX. LocalStorage stores progress.
-// Later you can plug a real DB (Supabase) instead of localStorage.
-
-// Helpers
-const $ = (id) => document.getElementById(id);
-const qs = (key) => new URL(location.href).searchParams.get(key);
-const setQs = (key, val) => {
-  const u = new URL(location.href);
-  u.searchParams.set(key, val);
-  history.replaceState({}, "", u.toString());
+// State
+let state = {
+  chainId: null,
+  prompt: "",
+  lines: [],
+  locked: false
 };
 
 // Elements
-const yr = $("yr");
-const chainBadge = $("chainBadge");
-const startPanel = $("startPanel");
-const playPanel = $("playPanel");
-const revealPanel = $("revealPanel");
+const setupView = document.getElementById("setupView");
+const playView = document.getElementById("playView");
+const revealView = document.getElementById("revealView");
+const promptInput = document.getElementById("promptInput");
+const startBtn = document.getElementById("startBtn");
+const surpriseBtn = document.getElementById("surpriseBtn");
+const chainIdDisplay = document.getElementById("chainIdDisplay");
+const promptTextEl = document.getElementById("promptText");
+const linesListEl = document.getElementById("linesList");
+const lineInput = document.getElementById("lineInput");
+const submitBtn = document.getElementById("submitBtn");
+const badgesEl = document.getElementById("badges");
+const promptReveal = document.getElementById("promptReveal");
+const linesReveal = document.getElementById("linesReveal");
+const shareBtn = document.getElementById("shareBtn");
+const againBtn = document.getElementById("againBtn");
+const newChainBtn = document.getElementById("newChainBtn");
+const shareLinkBtn = document.getElementById("shareLinkBtn");
+const copyTextBtn = document.getElementById("copyTextBtn");
+const shareXBtn = document.getElementById("shareXBtn");
 
-const promptInput = $("promptInput");
-const startBtn = $("startBtn");
-const randomPrompt = $("randomPrompt");
+// Utils
+function uid(len=6){ return Math.random().toString(36).substr(2,len).toUpperCase(); }
+function saveState(){ localStorage.setItem("fuseState", JSON.stringify(state)); }
+function loadState(){ let s = localStorage.getItem("fuseState"); if(s) state = JSON.parse(s); }
+function showSetup(){ setupView.classList.remove("hidden"); playView.classList.add("hidden"); revealView.classList.add("hidden"); }
+function showPlay(){ setupView.classList.add("hidden"); playView.classList.remove("hidden"); revealView.classList.add("hidden"); }
+function showReveal(){ setupView.classList.add("hidden"); playView.classList.add("hidden"); revealView.classList.remove("hidden"); }
 
-const newChainBtn = $("newChainBtn");
-const shareLinkBtn = $("shareLinkBtn");
-
-const chainIdEl = $("chainId");
-const lastLineEl = $("lastLine");
-const turnNumEl = $("turnNum");
-const lineInput = $("lineInput");
-const charsLeftEl = $("charsLeft");
-const submitLine = $("submitLine");
-const progressEl = $("progress");
-
-const promptTextEl = $("promptText");
-const linesListEl = $("linesList");
-const shareBtn = $("shareBtn");
-const againBtn = $("againBtn");
-
-yr.textContent = new Date().getFullYear();
-
-const SURPRISE = [
-  "If aliens landed tomorrow…",
-  "I woke up and chose…",
-  "In a parallel universe…",
-  "The pigeons formed a union because…",
-  "If I had 24 hours with $1M…",
-  "The worst superpower is…",
-  "My villain origin story…"
-];
-
-// State shape kept in localStorage per chain id
-// { id, prompt, lines: [], turn:1..11, locked:false }
-function genId() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+function updateBadges(s){
+  badgesEl.textContent = `Turn ${s.lines.length+1}/10 • Chain ${s.chainId}`;
 }
 
-function storageKey(id){ return `fuse_chain_${id}`; }
-
-function newChainIdForVisitor() {
-  // Every new visitor (no ?c=) gets a fresh ID.
-  const id = genId();
-  setQs("c", id);
-  return id;
+// Share text
+function buildResultText(){
+  const title = `Fuse — Chain Reaction (${state.lines.length}/10)\n`;
+  const body  = [state.prompt, ...state.lines.map((l,i)=>`${i+1}. ${l}`)].join("\n");
+  const link  = `\nPlay my chain: ${location.href}`;
+  return `${title}${body}${link}`;
+}
+function updateXShareLink(){
+  const text = buildResultText();
+  const url  = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+  shareXBtn.href = url;
 }
 
-function loadChain(id){
-  const raw = localStorage.getItem(storageKey(id));
-  return raw ? JSON.parse(raw) : null;
-}
-
-function saveChain(state){
-  localStorage.setItem(storageKey(state.id), JSON.stringify(state));
-}
-
-function ensureChainId(){
-  let id = qs("c");
-  if(!id){
-    id = newChainIdForVisitor();
-  }
-  return id;
-}
-
-// UI
-function updateBadges(state){
-  chainIdEl.textContent = state.id;
-  progressEl.textContent = `${state.lines.length} / 10 lines`;
-  turnNumEl.textContent = String(state.turn);
-  shareLinkBtn.href = location.href;
-  shareLinkBtn.textContent = "Share Link";
-  chainBadge.textContent = `Your unique chain ID: ${state.id} • Share with friends to build together`;
-}
-
-function showStart(){
-  startPanel.classList.remove("hidden");
-  playPanel.classList.add("hidden");
-  revealPanel.classList.add("hidden");
-}
-
-function showPlay(){
-  startPanel.classList.add("hidden");
-  playPanel.classList.remove("hidden");
-  revealPanel.classList.add("hidden");
-}
-
-function showReveal(){
-  startPanel.classList.add("hidden");
-  playPanel.classList.add("hidden");
-  revealPanel.classList.remove("hidden");
-}
-
-// App flow
-let state = null;
-
-function init(){
-  const id = ensureChainId();
-  state = loadChain(id);
-  if(!state){
-    state = { id, prompt: "", lines: [], turn: 1, locked: false };
-    saveChain(state);
-  }
-
-  if(state.locked){
-    renderReveal(state);
-  }else if(state.prompt){
-    renderPlay(state, true);
-  }else{
-    showStart();
-  }
-  updateBadges(state);
-}
-
-function startChain(prompt){
-  state.prompt = prompt.trim();
-  state.lines = [];
-  state.turn = 1;
-  state.locked = false;
-  saveChain(state);
-  renderPlay(state, false);
-}
-
-function addLine(text){
-  if(state.locked) return;
-  state.lines.push(text.trim());
-  state.turn++;
-  if(state.lines.length >= 10){
-    state.locked = true;
-    saveChain(state);
-    renderReveal(state);
-    fireConfetti();
-  } else {
-    saveChain(state);
-    renderPlay(state, true);
-  }
-}
-
-function renderPlay(s, notFirst){
+// Start chain
+startBtn.onclick = () => {
+  const prompt = promptInput.value.trim();
+  if(!prompt) return alert("Enter a prompt!");
+  state = { chainId: uid(), prompt, lines: [], locked:false };
+  saveState();
+  renderPlay(state);
   showPlay();
-  lastLineEl.textContent = notFirst && s.lines.length
-    ? "Previous line: " + s.lines[s.lines.length - 1]
-    : "You’re first — set the tone.";
-  lineInput.value = "";
-  charsLeftEl.textContent = String(80);
-  updateBadges(s);
-}
+  chainIdDisplay.textContent = `Your unique chain ID: ${state.chainId} — Share with friends to build together`;
+};
 
+// Surprise prompt
+const prompts = ["If aliens landed tomorrow…","The last thing I remember was…","It all started when…"];
+surpriseBtn.onclick = () => {
+  promptInput.value = prompts[Math.floor(Math.random()*prompts.length)];
+};
+
+// Submit line
+submitBtn.onclick = () => {
+  const line = lineInput.value.trim();
+  if(!line) return;
+  state.lines.push(line);
+  lineInput.value="";
+  if(state.lines.length>=10){ state.locked=true; saveState(); renderReveal(state); showReveal(); }
+  else { saveState(); renderPlay(state); }
+};
+
+// Copy / Share
+copyTextBtn.onclick = async () => {
+  await navigator.clipboard.writeText(buildResultText());
+  copyTextBtn.textContent = "Copied ✅";
+  setTimeout(()=> copyTextBtn.textContent = "Copy Result", 1200);
+};
+shareXBtn.onclick = () => updateXShareLink();
+
+// Reveal
 function renderReveal(s){
   showReveal();
-  promptTextEl.textContent = s.prompt || "(no prompt)";
-  linesListEl.innerHTML = "";
-  s.lines.forEach((ln, i)=>{
-    const li = document.createElement("li");
-    li.textContent = ln;
+  promptReveal.textContent = s.prompt;
+  linesReveal.innerHTML="";
+  s.lines.forEach((ln,i)=>{
+    const li=document.createElement("li");
+    li.textContent=ln;
+    linesReveal.appendChild(li);
+  });
+  updateBadges(s);
+  updateXShareLink();
+}
+
+// Play
+function renderPlay(s){
+  showPlay();
+  promptTextEl.textContent = s.prompt;
+  linesListEl.innerHTML="";
+  s.lines.forEach((ln,i)=>{
+    const li=document.createElement("li");
+    li.textContent=ln;
     linesListEl.appendChild(li);
   });
   updateBadges(s);
+  updateXShareLink();
 }
 
-function newChain(){
-  const id = genId();
-  setQs("c", id);
-  state = { id, prompt: "", lines: [], turn: 1, locked: false };
-  saveChain(state);
-  promptInput.value = "";
-  updateBadges(state);
-  showStart();
-}
+// Reset
+againBtn.onclick = ()=>{ state={}; saveState(); showSetup(); };
+newChainBtn.onclick = ()=>{ state={}; saveState(); showSetup(); };
+shareLinkBtn.onclick = ()=>{ navigator.clipboard.writeText(location.href); alert("Link copied!"); };
 
-// Share image of the card
-function downloadCard(){
-  import('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm')
-    .then(htmlToImage => htmlToImage.toPng(document.getElementById("card"), { pixelRatio: 2 }))
-    .then(url => {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "fuse-chain.png";
-      a.click();
-    })
-    .catch(()=> {
-      const txt = [state.prompt, ...state.lines.map((l,i)=>`${i+1}. ${l}`)].join("\n");
-      navigator.clipboard.writeText(txt);
-      alert("Image fallback: chain copied to clipboard.");
-    });
-}
-
-function fireConfetti(){
-  import('https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js')
-    .then(()=> {
-      // eslint-disable-next-line no-undef
-      confetti({
-        particleCount: 120, spread: 75, origin: { y: 0.6 }
-      });
-    }).catch(()=>{});
-}
-
-// Events
-startBtn.onclick = () => {
-  const p = promptInput.value.trim();
-  if(!p) return alert("Add a short prompt first.");
-  startChain(p);
-};
-randomPrompt.onclick = () => {
-  promptInput.value = SURPRISE[Math.floor(Math.random()*SURPRISE.length)];
-};
-newChainBtn.onclick = newChain;
-
-lineInput.addEventListener("input", () => {
-  const left = 80 - lineInput.value.length;
-  charsLeftEl.textContent = String(left);
-});
-
-submitLine.onclick = () => {
-  const text = lineInput.value.trim();
-  if(!text) return alert("Write a short line.");
-  addLine(text);
-};
-
-shareBtn.onclick = downloadCard;
-againBtn.onclick = newChain;
-
-// Kickoff
-init();
+// Restore
+loadState();
+if(state.locked){ renderReveal(state); showReveal(); }
+else if(state.chainId){ renderPlay(state); showPlay(); }
+else { showSetup(); }
