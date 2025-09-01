@@ -1,33 +1,75 @@
-/* Minimal custom CSS + pretty animated gradient */
-.animated-gradient{
-  background: linear-gradient(120deg,#0ea5e9 0%, #a78bfa 30%, #22c55e 60%, #f59e0b 100%);
-  filter: saturate(1.2) brightness(.9);
-  background-size: 300% 300%;
-  animation: move 18s ease infinite;
-}
-@keyframes move{
-  0%{ background-position: 0% 50%; }
-  50%{ background-position: 100% 50%; }
-  100%{ background-position: 0% 50%; }
-}
-.input{
-  @apply w-full rounded-lg bg-black/40 border border-white/15 px-3 py-2 outline-none
-         focus:ring-2 focus:ring-sky-400 placeholder:text-zinc-400 text-zinc-100;
-}
-.btn-primary{
-  @apply inline-flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-400
-         px-4 py-2 font-semibold text-white border border-white/10 transition;
-}
-.btn-secondary{
-  @apply inline-flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20
-         px-4 py-2 font-semibold text-white border border-white/15 transition;
-}
-.btn-ghost{
-  @apply inline-flex items-center justify-center rounded-lg bg-transparent hover:bg-white/10
-         px-3 py-2 font-medium text-white border border-white/10 transition;
-}
-.bg-card{
-  background:
-    radial-gradient(1200px 300px at -100% 0%, rgba(255,255,255,.08), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.2));
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuse — The Chain Reaction Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            fusePink: '#FF5EA2',
+            fusePurple: '#7C3AED',
+            fuseBlue: '#3B82F6',
+            fuseLime: '#84CC16'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center text-white">
+
+  <header class="absolute top-0 left-0 right-0 flex justify-between items-center p-4 text-sm text-white/80">
+    <div class="font-bold">🔥 Fuse</div>
+    <nav class="flex gap-4">
+      <button id="newChainBtn" class="hover:underline">New Chain</button>
+      <button id="shareLinkBtn" class="hover:underline">Share Link</button>
+    </nav>
+  </header>
+
+  <main id="card" class="card w-full max-w-xl p-6 space-y-6 bg-black/30">
+    <div id="setupView">
+      <h1 class="text-xl font-bold mb-2">Build chaos together 🔥</h1>
+      <p class="mb-4 text-white/70 text-sm">
+        Start with a short prompt. Each turn adds a line. After 10 turns, it locks, reveals, and you get a sharable card.
+      </p>
+      <p id="chainIdDisplay" class="mb-4 text-xs text-white/50"></p>
+      <input id="promptInput" class="input mb-3" placeholder="Your prompt">
+      <div class="flex gap-2">
+        <button id="surpriseBtn" class="btn-secondary">Surprise me</button>
+        <button id="startBtn" class="btn-primary">Start</button>
+      </div>
+    </div>
+
+    <div id="playView" class="hidden">
+      <h2 id="promptText" class="font-semibold text-lg"></h2>
+      <ol id="linesList" class="space-y-1 text-white/80 text-sm"></ol>
+      <textarea id="lineInput" class="input mt-2" placeholder="Add your line..."></textarea>
+      <button id="submitBtn" class="btn-primary mt-2">Submit</button>
+      <div id="badges" class="mt-2 text-xs text-white/50"></div>
+    </div>
+
+    <div id="revealView" class="hidden">
+      <h2 id="promptReveal" class="font-semibold text-lg"></h2>
+      <ol id="linesReveal" class="space-y-1 text-white/80 text-sm"></ol>
+      <div class="share-strip my-4"></div>
+      <div class="flex gap-2 flex-wrap">
+        <button id="shareBtn" class="btn-secondary">Download Card</button>
+        <button id="copyTextBtn" class="btn-ghost">Copy Result</button>
+        <a id="shareXBtn" class="btn-primary" target="_blank" rel="noopener">Share on X</a>
+        <button id="againBtn" class="btn-ghost">Start Another</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="absolute bottom-2 text-xs text-white/40">
+    © 2025 Fuse — The Chain Reaction Game
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
